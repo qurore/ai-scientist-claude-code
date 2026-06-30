@@ -21,11 +21,37 @@ strong paper.
   nudge numbers to "reach" the target.
 - **No fabrication.** Every new number still traces to a file in `experiment/`; every new
   citation is real. New experiments are really run via `aisci.exec`.
+- **Blind re-review — no leakage to the grader.** The re-review must judge the paper *on its
+  merits only*. The reviewer is given **only** the paper PDF + `experiment_results/` (to
+  verify numbers) — **never** the iteration number, the fact that this is a revision, the
+  prior reviews, or any prior score. The paper must carry **no revision markers** (no "v2",
+  "revised", "iteration k", changelog, or "response to reviewers"). Keep the `reviews/`
+  history, `score_history.jsonl`, and `decisions.jsonl` strictly in the meta layer for the
+  human; they are never inputs to the review. This blindness is what makes a rising score
+  meaningful rather than anchoring/leniency bias.
 - **Honest ceiling.** If, after real changes, the honest score plateaus below target, stop
   and say so plainly: report the current honest score and exactly what would be needed to
   go higher (usually scale/compute beyond this laptop). A truthful 6.5 beats a fake 8.
 
+## Human-idea inbox (read at the START of every iteration)
+Each project has an inbox `projects/<id>/human_ideas.md` where a person can drop a hypothesis
+or "try this" at ANY time, even mid-study. At the start of every iteration, **before** acting
+on the review:
+1. `aisci.run ideas --run <id>` lists the OPEN entries (unchecked `[ ]`).
+2. Fold each open idea into this iteration's plan as an explicit hypothesis to test, alongside
+   the review-driven work, and run real experiments for it (`aisci.exec`).
+3. **Close it with the honest outcome** so it is never re-read or re-tested:
+   `aisci.run idea-resolve --run <id> --id N --outcome confirmed|refuted|inconclusive --note "<what you did, the result, the evidence file>"`.
+   A *confirmed* idea should be reflected in the paper; a *refuted* one stays closed with its
+   result, so later iterations are not pulled back toward a hypothesis already shown wrong.
+   Log a `aisci.run decide ...` for any idea that materially shaped the work.
+
+This is enforced-by-convention via the helper (it flips `[ ]`→`[x]` and appends a `**Tested**`
+annotation); never hand-edit the checkboxes. Human ideas are tested with the same rigor and
+honesty as everything else — confirm only what the experiments support.
+
 ## Procedure (one iteration)
+0. **Consult the human-idea inbox** (above) and merge any open ideas into the plan.
 1. **Read the latest review** `projects/<id>/review.json`. Rank its Weaknesses/Questions by
    how much each holds down Overall and the sub-scores (Soundness, Significance, Quality,
    Clarity, Contribution).

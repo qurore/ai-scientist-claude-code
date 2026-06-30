@@ -5,15 +5,18 @@ The Mac host has no CUDA GPU, so this backend borrows one from Google Colab to r
 pipeline (ideation, writing, review) stays with the Claude Code agent — we never
 call ``google-colab-ai`` / Gemini or any external LLM.
 
-Mechanism: a plain shared folder, no Google API / OAuth code.
-  1. ``run_colab`` writes a job (the experiment ``code/`` + ``job.json``) into
-     ``$AISCI_COLAB_SYNC/jobs/<job_id>/`` and touches a ``READY`` marker last.
-  2. A long-running runner notebook on Colab (``colab/colab_runner.ipynb``) mounts
-     the *same* Drive folder, executes the script on the GPU, and writes results +
-     a ``DONE`` marker into ``$AISCI_COLAB_SYNC/results/<job_id>/``.
-  3. ``run_colab`` polls for ``DONE``, copies the log / ``experiment_results`` /
-     ``plots`` back into the local run dir, and returns the same record schema as
-     the local backend.
+Two sides, one shared folder (no Google API / OAuth code):
+
+* **client** — ``run_colab`` writes a job (the experiment ``code/`` + ``job.json``)
+  into ``$AISCI_COLAB_SYNC/jobs/<job_id>/``, touches ``READY`` last, then polls for
+  ``$AISCI_COLAB_SYNC/results/<job_id>/DONE`` and pulls the artifacts back into the
+  local run dir (identical layout to the local backend).
+* **runner** — on Colab, ``colab/colab_runner.ipynb`` mounts the *same* Drive folder
+  and executes jobs on the GPU. ``serve()`` here is a local CPU stand-in for that
+  notebook: same protocol, no GPU — handy for dry-running the whole path
+  (``python -m aisci.colab serve``) and for the test suite. Both write a
+  ``RUNNER_ALIVE`` heartbeat so callers can check a runner is actually up before
+  routing heavy nodes to it (``python -m aisci.colab status``).
 
 ``$AISCI_COLAB_SYNC`` is the *local* mirror (e.g. via Google Drive for Desktop) of
 the Drive folder the notebook mounts — typically ``My Drive/aisci-colab``.
@@ -24,10 +27,15 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import subprocess
+import sys
 import time
 from pathlib import Path
 
 from . import state
+from .exec import _find_metric_in_stdout
+
+ALIVE_FILE = "RUNNER_ALIVE"
 
 
 def _sync_root() -> Path | None:
@@ -37,6 +45,30 @@ def _sync_root() -> Path | None:
     return Path(root).expanduser()
 
 
+# --------------------------------------------------------------------------- #
+# Runner liveness (heartbeat)                                                  #
+# --------------------------------------------------------------------------- #
+def runner_alive(sync_root: Path | str | None = None, max_age: int = 180) -> bool:
+    """True if a runner wrote a ``RUNNER_ALIVE`` heartbeat within ``max_age`` s."""
+    root = Path(sync_root).expanduser() if sync_root else _sync_root()
+    if root is None:
+        return False
+    hb = root / ALIVE_FILE
+    if not hb.exists():
+        return False
+    try:
+        ts = float(hb.read_text().strip())
+    except (ValueError, OSError):
+        try:
+            ts = hb.stat().st_mtime
+        except OSError:
+            return False
+    return (time.time() - ts) <= max_age
+
+
+# --------------------------------------------------------------------------- #
+# Client side: submit a job and pull results back                             #
+# --------------------------------------------------------------------------- #
 def _err_record(exp: Path, run_id: str, node: str, seed: int | None, msg: str) -> dict:
     """Write a buggy record (+ a log explaining why) so callers get clean JSON."""
     log_path = exp / "logs" / f"{node}.log"
@@ -88,7 +120,8 @@ def run_colab(run_id: str, exp: Path, script_rel: str, node: str,
     dst = jobs / "code"
     if dst.exists():
         shutil.rmtree(dst)
-    shutil.copytree(code_dir, dst)
+    shutil.copytree(code_dir, dst,
+                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     (jobs / "job.json").write_text(json.dumps({
         "job_id": job_id,
         "project_id": run_id,
@@ -110,10 +143,11 @@ def run_colab(run_id: str, exp: Path, script_rel: str, node: str,
         time.sleep(poll)
 
     if not done.exists():
+        hint = "" if runner_alive(root) else " No runner heartbeat — is the notebook running?"
         return _err_record(
             exp, run_id, node, seed,
-            f"No result from Colab within {timeout + extra}s. Is the runner notebook "
-            f"running on a GPU runtime and watching {root}/jobs? job_id={job_id}",
+            f"No result from Colab within {timeout + extra}s.{hint} "
+            f"Watching {root}/jobs; job_id={job_id}",
         )
 
     # Pull artifacts back into the local run dir (identical layout to local backend).
@@ -144,3 +178,146 @@ def run_colab(run_id: str, exp: Path, script_rel: str, node: str,
     rec["backend"] = "colab"
     rp.write_text(json.dumps(rec, indent=2))
     return rec
+
+
+# --------------------------------------------------------------------------- #
+# Runner side: execute a job (local CPU stand-in for the Colab notebook)       #
+# --------------------------------------------------------------------------- #
+def process_job(job_dir: Path, results_root: Path, workspace: Path) -> dict:
+    """Run one job's script and write results + DONE, mirroring the notebook."""
+    job = json.loads((job_dir / "job.json").read_text())
+    node = job["node"]
+    script = job["script"]
+    timeout = int(job.get("timeout", 1800))
+    seed = job.get("seed")
+
+    work = workspace / job["job_id"]
+    if work.exists():
+        shutil.rmtree(work)
+    work.mkdir(parents=True)
+    shutil.copytree(job_dir / "code", work / "code")
+    for d in ("experiment_results", "plots", "logs"):
+        (work / d).mkdir(exist_ok=True)
+
+    env = dict(os.environ)
+    if seed is not None:
+        env["AISCI_SEED"] = str(seed)
+
+    t0 = time.time()
+    timed_out = False
+    try:
+        proc = subprocess.run([sys.executable, str(work / script)], cwd=str(work),
+                              env=env, capture_output=True, text=True, timeout=timeout)
+        rc, out, err = proc.returncode, proc.stdout, proc.stderr
+    except subprocess.TimeoutExpired as e:
+        timed_out = True
+        rc = -1
+        out = e.stdout or ""
+        err = (e.stderr or "") + f"\n[aisci.colab] TIMEOUT after {timeout}s"
+    dur = time.time() - t0
+
+    (work / "logs" / f"{node}.log").write_text(
+        f"$ {sys.executable} {work / script}\n# cwd={work}\n# rc={rc} dur={dur:.1f}s\n"
+        "\n----- STDOUT -----\n" + (out or "") + "\n----- STDERR -----\n" + (err or ""))
+
+    metric = _find_metric_in_stdout(out or "")
+    rp = work / "experiment_results" / f"{node}.json"
+    if metric is None and rp.exists():
+        try:
+            metric = json.loads(rp.read_text())
+        except json.JSONDecodeError:
+            metric = None
+
+    is_buggy = rc != 0 or timed_out or metric is None
+    record = {
+        "node": node, "ok": not is_buggy, "is_buggy": is_buggy, "returncode": rc,
+        "timed_out": timed_out, "duration_s": round(dur, 1), "metric": metric,
+        "seed": seed, "log": f"experiment/logs/{node}.log",
+        "stderr_tail": (err or "")[-800:], "backend": "colab",
+    }
+    (work / "experiment_results" / f"{node}.json").write_text(json.dumps(record, indent=2))
+
+    res = results_root / job["job_id"]
+    if res.exists():
+        shutil.rmtree(res)
+    (res / "logs").mkdir(parents=True)
+    (res / "experiment_results").mkdir(parents=True)
+    (res / "plots").mkdir(parents=True)
+    shutil.copy(work / "logs" / f"{node}.log", res / "logs" / f"{node}.log")
+    for f in (work / "experiment_results").glob("*"):
+        if f.is_file():
+            shutil.copy(f, res / "experiment_results" / f.name)
+    for f in (work / "plots").glob("*"):
+        if f.is_file():
+            shutil.copy(f, res / "plots" / f.name)
+    (res / "DONE").write_text(str(time.time()))  # written last
+    return record
+
+
+def serve(sync_root: Path | str, once: bool = False, poll: int | None = None) -> None:
+    """Watch ``jobs/`` and process jobs (local CPU stand-in for the GPU notebook)."""
+    root = Path(sync_root).expanduser()
+    jobs = root / "jobs"
+    results = root / "results"
+    workspace = root / "_work"
+    for d in (jobs, results, workspace):
+        d.mkdir(parents=True, exist_ok=True)
+    poll = poll or int(os.environ.get("AISCI_COLAB_POLL", "10"))
+    print(f"[aisci.colab serve] watching {jobs} (CPU stand-in; no GPU)")
+    while True:
+        (root / ALIVE_FILE).write_text(str(time.time()))  # heartbeat
+        for ready in sorted(jobs.glob("*/READY")):
+            job_dir = ready.parent
+            if (job_dir / "PROCESSED").exists():
+                continue
+            (job_dir / "PROCESSED").write_text(str(time.time()))  # claim once
+            try:
+                rec = process_job(job_dir, results, workspace)
+                print(f"[done] {job_dir.name} ok={rec['ok']} dur={rec['duration_s']}s")
+            except Exception:
+                import traceback
+                traceback.print_exc()
+        if once:
+            break
+        time.sleep(poll)
+
+
+# --------------------------------------------------------------------------- #
+# CLI                                                                          #
+# --------------------------------------------------------------------------- #
+def main(argv=None) -> int:
+    import argparse
+    p = argparse.ArgumentParser(prog="aisci.colab")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    s = sub.add_parser("serve", help="run a local CPU runner (test stand-in for the notebook)")
+    s.add_argument("sync_root", nargs="?", default=os.environ.get("AISCI_COLAB_SYNC"))
+    s.add_argument("--once", action="store_true", help="process current jobs and exit")
+    s.add_argument("--poll", type=int, default=None)
+
+    st = sub.add_parser("status", help="report whether a runner heartbeat is fresh")
+    st.add_argument("sync_root", nargs="?", default=os.environ.get("AISCI_COLAB_SYNC"))
+    st.add_argument("--max-age", type=int, default=180)
+
+    args = p.parse_args(argv)
+
+    if args.cmd == "serve":
+        if not args.sync_root:
+            print(json.dumps({"ok": False, "error": "set AISCI_COLAB_SYNC or pass a path"}))
+            return 2
+        serve(args.sync_root, once=args.once, poll=args.poll)
+        return 0
+
+    if args.cmd == "status":
+        if not args.sync_root:
+            print(json.dumps({"ok": False, "error": "set AISCI_COLAB_SYNC or pass a path"}))
+            return 2
+        alive = runner_alive(args.sync_root, max_age=args.max_age)
+        print(json.dumps({"ok": True, "runner_alive": alive, "sync_root": str(args.sync_root)}))
+        return 0 if alive else 1
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

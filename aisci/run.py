@@ -80,6 +80,26 @@ def cmd_decide(args) -> int:
     return 0
 
 
+def cmd_ideas(args) -> int:
+    """List OPEN human-written ideas in the project inbox (human_ideas.md)."""
+    rid = _resolve(args.run)
+    from . import ideas
+    ideas.ensure(rid)
+    items = ideas.list_open(rid)
+    print(json.dumps({"open_ideas": items, "count": len(items)}, indent=2))
+    return 0
+
+
+def cmd_idea_resolve(args) -> int:
+    """Close a human idea with an outcome so it is not re-read in later loops."""
+    rid = _resolve(args.run)
+    from . import ideas
+    res = ideas.resolve(rid, args.id, args.outcome, args.note or "")
+    state.append_study_log(rid, f"HUMAN IDEA [{args.outcome}]: {res['title']} — {args.note or ''}")
+    print(json.dumps(res))
+    return 0
+
+
 def cmd_list(args) -> int:
     if not state.RUNS.exists():
         return 0
@@ -122,6 +142,18 @@ def main(argv=None) -> int:
     pd.add_argument("--alternatives", default=None, help="semicolon-separated options not taken")
     pd.add_argument("--evidence", default=None, help="pointer to supporting result/file")
     pd.set_defaults(func=cmd_decide)
+
+    pi = sub.add_parser("ideas", help="list OPEN human ideas in the project inbox")
+    pi.add_argument("--run", default=None)
+    pi.set_defaults(func=cmd_ideas)
+
+    pir = sub.add_parser("idea-resolve", help="close a human idea with an outcome")
+    pir.add_argument("--run", default=None)
+    pir.add_argument("--id", type=int, required=True)
+    pir.add_argument("--outcome", required=True,
+                     choices=["confirmed", "refuted", "inconclusive"])
+    pir.add_argument("--note", default=None)
+    pir.set_defaults(func=cmd_idea_resolve)
 
     pl = sub.add_parser("list")
     pl.set_defaults(func=cmd_list)

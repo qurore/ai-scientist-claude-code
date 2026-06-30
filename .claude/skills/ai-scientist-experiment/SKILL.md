@@ -48,10 +48,8 @@ Procedure:
    ```
    The script must print a JSON metrics line (e.g. `{"metric": 0.83, "loss": ...}`) or
    write `experiment_results/<node>.json`. Capture stdout/stderr to the log.
-   - **Need a GPU?** Add `--backend colab` to run that node on a Colab GPU instead of
-     locally (compute only — never an LLM). The artifacts come back in the same layout,
-     so the rest of this procedure is unchanged. Requires the runner notebook open and
-     `AISCI_COLAB_SYNC` set — see `colab/README.md`. Keep cheap/CPU nodes local.
+   - **Heavy node?** Add `--backend colab` to run it on a Colab GPU (compute only). Same
+     artifact layout, so the rest of this procedure is unchanged. See *Compute routing*.
 3. **Evaluate:** parse the metric. Mark `is_buggy=true` if it crashed or produced no
    metric.
 4. **Best-first expand:** pick the best non-buggy node and improve it (next iteration),
@@ -62,6 +60,25 @@ Procedure:
 6. **Multi-seed** the best research-stage node across `num_seeds` seeds and record
    mean ± std.
 
+## Compute routing (heavy nodes → Colab GPU)
+No CUDA GPU on this host. Decide **per node** where it runs — the artifacts come back in
+the same layout either way, so journal/plots/summary don't care which ran.
+- **Local (default):** preliminary, debugging, plotting, and anything that fits CPU/MPS
+  within the node's timeout. Keep it tiny (see reality checks).
+- **Colab GPU (`--backend colab`):** only when the node *genuinely needs* a GPU (model or
+  training too big/slow for CPU/MPS) **and all** of:
+  1. **Attended, not autopilot.** If `AISCI_AUTOPILOT=1`, keep the node local and small —
+     the Colab runner is a human-attended notebook, so **never block unattended autopilot
+     on it**.
+  2. **`AISCI_COLAB_SYNC` is set**, and
+  3. **a runner is alive:** `.venv/bin/python -m aisci.colab status` reports
+     `runner_alive: true`. If not, ask the user to start `colab/colab_runner.ipynb` on a
+     GPU runtime, or just run the node locally — don't silently hang on a dead runner.
+
+Compute only — Colab never does ideation/writing/review (`google-colab-ai`/Gemini are off
+limits). No runner handy? `python -m aisci.colab serve <dir>` is a local CPU stand-in for
+dry-running the path. See `colab/README.md`.
+
 ## Execution rules (safety)
 - All code, data, and outputs stay **inside `projects/<id>/experiment/`**. Never write
   outside the run dir.
@@ -70,7 +87,8 @@ Procedure:
 - The `guard-experiment-exec` hook will block dangerous shell. If blocked, redesign —
   don't bypass.
 - Set seeds everywhere; log versions. Use CPU or MPS (`torch.device("mps")` if
-  available) — there is no CUDA here.
+  available) — there is no *local* CUDA; for GPU-bound nodes use the Colab backend per
+  *Compute routing* above.
 
 ## Plots
 After the research/ablation stages, aggregate figures into `experiment/plots/`

@@ -14,6 +14,14 @@ Act as a critical, fair conference reviewer of `projects/<id>/writeup/paper.pdf`
 - Figure/caption/reference review: `vendor/AI-Scientist-v2/ai_scientist/perform_vlm_review.py`
 Read these to match the exact rubric and scales.
 
+## Review blind — no leakage
+Judge the paper **fresh, on its own merits**, from only what is in front of you: the
+`paper.pdf` and the `experiment/` results (to verify numbers). You are **not** told — and
+must **not** assume or look up — whether this is a first submission or a revision, which
+improvement iteration it is, or what any prior review or score said. Do **not** open
+`reviews/`, `score_history.jsonl`, or `decisions.jsonl`. This keeps the score an unbiased
+function of the paper itself (no anchoring or leniency from "it has improved").
+
 ## Procedure
 1. **Read the paper.** Open `paper.pdf` with Read (you see text + figures). Also load
    `experiment/experiment_results/summary.json` so you can verify the paper's numbers

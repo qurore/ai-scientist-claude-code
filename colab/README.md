@@ -58,7 +58,32 @@ Optional env knobs:
 | `AISCI_COLAB_WAIT` | `1800` | extra seconds to wait beyond the script `--timeout` |
 
 In the experiment stage, just add `--backend colab` to the `aisci.exec` calls you want
-on GPU; keep cheap/CPU steps local.
+on GPU; keep cheap/CPU steps local. The experiment skill auto-routes only *heavy* nodes
+to Colab, and only when attended (not autopilot) and a runner is alive.
+
+## Check a runner is up
+
+The runner (notebook or local stand-in) writes a `RUNNER_ALIVE` heartbeat. Check it:
+
+```bash
+.venv/bin/python -m aisci.colab status     # {"runner_alive": true/false, ...}
+```
+
+## Dry-run without Colab
+
+You can exercise the whole submit → run → pull-back path locally — no Drive, no GPU —
+with a CPU stand-in for the notebook (same job protocol):
+
+```bash
+# terminal 1: start the local runner on any folder
+.venv/bin/python -m aisci.colab serve /tmp/aisci-sync
+
+# terminal 2: point the backend at the same folder and run a node
+AISCI_COLAB_SYNC=/tmp/aisci-sync \
+  .venv/bin/python -m aisci.exec projects/<id> code/n3.py --backend colab
+```
+
+This validates everything except the actual remote GPU; for that, use the notebook.
 
 ## Honest constraints
 

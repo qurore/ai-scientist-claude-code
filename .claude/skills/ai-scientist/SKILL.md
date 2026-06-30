@@ -21,6 +21,7 @@ WebSearch). No external LLM API keys are involved.
 | 3. Writeup   | `ai-scientist-writeup`    | `projects/<id>/writeup/paper.pdf` (top-journal quality, no page limit) |
 | 4. Review    | `ai-scientist-review`     | `projects/<id>/review.json` |
 | 5. Improve (loop) | `ai-scientist-improve` | revise → re-review until honest Overall ≥ 8; `reviews/` history |
+| 6. Publish (opt.) | `ai-scientist-publish` | deposit `paper.pdf` to Zenodo + DOI (sandbox/draft by default; publish only on confirmation) |
 
 Invoke a stage with its slash command (e.g. `/ai-scientist-ideate`) or just follow its
 SKILL.md. This umbrella skill coordinates them.

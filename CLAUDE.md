@@ -131,7 +131,31 @@ verdict.
 **same theme**, raising the paper's quality until the honest Overall score clears the bar
 (target ≥ 8/10) or a bounded number of iterations is reached. The score must rise through
 **real** improvement; the review stays calibrated and is never inflated to "reach" the
-target. If the honest ceiling at this compute scale is lower, stop and say so plainly.
+target. To keep the score meaningful, the re-review is **blind**: the reviewer sees only the
+paper + experiment results, never the iteration number, prior reviews, or scores. Reviews are
+versioned (`projects/<id>/reviews/`, `score_history.jsonl`); the implementation is not.
+
+### Human-idea inbox (per project)
+Each project holds `projects/<id>/human_ideas.md` — created empty — where a human can drop a
+hypothesis or "try this" at **any time**. At the start of every improvement-loop iteration the
+loop reads the OPEN entries (`aisci.run ideas --run <id>`), tests them alongside the
+review-driven work, and closes each with its outcome
+(`aisci.run idea-resolve --id N --outcome confirmed|refuted|inconclusive --note ...`), which
+flips `[ ]`→`[x]` and appends a `**Tested**` note. Closed ideas are not re-read, so a refuted
+hypothesis cannot pull later iterations off course. Human ideas are tested with the same rigor
+and honesty as everything else.
+
+## Publishing (Zenodo, opt-in)
+
+`/ai-scientist-publish` deposits a finished `paper.pdf` to Zenodo and (on explicit
+confirmation) mints a permanent DOI via `aisci.zenodo`. Gated and safe by default: **sandbox +
+draft** unless `--production`/`--publish`, and production publish refuses unless the review
+Decision is `Accept`. The only secret is a Zenodo token in `.env` (`ZENODO_TOKEN` /
+`ZENODO_SANDBOX_TOKEN`, scopes `deposit:write`+`deposit:actions`) — **never commit it** (the
+repo is public). ORCID/author/license are non-secret metadata in `.env`. Title comes from the
+final `paper.tex`, the abstract from the current `summary.json`, and the metadata always
+carries an **AI-generation disclosure** (the human with the ORCID is the responsible curator).
+Zenodo DOIs are permanent — test on sandbox first.
 
 ## Autopilot (opt-in)
 
