@@ -48,6 +48,10 @@ Procedure:
    ```
    The script must print a JSON metrics line (e.g. `{"metric": 0.83, "loss": ...}`) or
    write `experiment_results/<node>.json`. Capture stdout/stderr to the log.
+   - **Need a GPU?** Add `--backend colab` to run that node on a Colab GPU instead of
+     locally (compute only — never an LLM). The artifacts come back in the same layout,
+     so the rest of this procedure is unchanged. Requires the runner notebook open and
+     `AISCI_COLAB_SYNC` set — see `colab/README.md`. Keep cheap/CPU nodes local.
 3. **Evaluate:** parse the metric. Mark `is_buggy=true` if it crashed or produced no
    metric.
 4. **Best-first expand:** pick the best non-buggy node and improve it (next iteration),

@@ -24,6 +24,7 @@ review it, with your own tools. No external LLM API keys are used.
 .mcp.json              project-shared MCP servers: arxiv, semantic-scholar (literature search)
 aisci/                 thin python helpers the skills shell out to (run/exec/latex/state)
 bridge/                claude -p adapter (claude_cli, model_map, *_backend, install, run)
+colab/                 optional Colab GPU backend for aisci.exec (compute only) — runner notebook + README
 config/model_map.json  upstream-model -> Claude-model overrides
 scripts/setup.sh       idempotent env setup (clones vendor, builds .venv, installs deps)
 scripts/doctor.sh      environment diagnostics
@@ -57,6 +58,7 @@ version them in a private repo, flip the documented toggle in `.gitignore` (see
 .venv/bin/python -m aisci.run new --slug <slug> --topic "<topic>"   # create a run
 .venv/bin/python -m aisci.run show|list|set ...                     # inspect/update state
 .venv/bin/python -m aisci.exec projects/<id> code/<file>.py --timeout S # run an experiment script
+.venv/bin/python -m aisci.exec projects/<id> code/<file>.py --backend colab # ...on a Colab GPU (compute only; see colab/README.md)
 .venv/bin/python -m aisci.latex projects/<id>/writeup/latex paper.tex   # compile the paper
 bash scripts/doctor.sh                                              # diagnose env
 ```
@@ -98,6 +100,9 @@ injunctions in multiple jurisdictions.
 
 - **No CUDA GPU** here (macOS). Keep experiments tiny: synthetic/small data, small
   models, CPU/MPS, short training. Be honest with the user about scope for big ideas.
+  For heavier nodes you can borrow a GPU with the optional Colab backend
+  (`aisci.exec --backend colab`, see `colab/README.md`) — it runs *experiment code only*,
+  never the LLM (Claude stays the scientist; we do not use `google-colab-ai`/Gemini).
 - **Never fabricate** results or citations. Every number in a paper must trace to a file
   in `experiment/`; every citation must be a real, findable paper. Report failures and
   nuance honestly — a strong *honest* result (positive, negative, or mixed) is the goal.
