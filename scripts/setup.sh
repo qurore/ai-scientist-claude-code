@@ -48,7 +48,16 @@ echo "==> Installing extras needed by the launcher (torch, psutil)"
 # 4) Optional: anthropic[bedrock] for strict upstream parity via the bridge.
 .venv/bin/python -m pip install -q "anthropic[bedrock]" >/dev/null 2>&1 || true
 
-# 5) System tools needed for the writeup stage (best-effort, never fatal).
+# 5) Optional: uv, used by .mcp.json to launch the literature-search MCP
+#    servers (arxiv-mcp-server, semantic-scholar-fastmcp). Best-effort: the
+#    ideate/writeup skills fall back to WebSearch/curl if this is unavailable.
+echo "==> Installing uv (for literature-search MCP servers) into .venv"
+.venv/bin/python -m pip install -q uv || {
+  echo "WARN: uv install failed. /ai-scientist-ideate and -writeup still work" >&2
+  echo "      via WebSearch; the arxiv/semantic-scholar MCP tools need uv." >&2
+}
+
+# 6) System tools needed for the writeup stage (best-effort, never fatal).
 echo "==> Checking system tools for the writeup stage"
 missing=()
 for t in pdflatex pdftotext chktex; do
@@ -64,7 +73,7 @@ else
   echo "    All writeup tools present."
 fi
 
-mkdir -p runs ideas .aisci_cache
+mkdir -p projects ideas .aisci_cache .mcp-data
 
 echo
 echo "==> Setup complete. Verify anytime with: bash scripts/doctor.sh"

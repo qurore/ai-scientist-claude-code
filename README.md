@@ -28,8 +28,9 @@ through the `claude` CLI in headless mode.
 | `aisci/` | thin Python helpers (`run`, `exec`, `latex`, `state`) the skills call |
 | `bridge/` | optional `claude -p` adapter for running upstream stages unmodified |
 | `scripts/` | `setup.sh`, `doctor.sh` |
+| `ideas/` | topic *staging* area (drafts + template); gitignored except the template |
 | `vendor/AI-Scientist-v2/` | upstream clone — the reference spec (gitignored) |
-| `runs/<id>/` | one self-contained directory per study (gitignored) |
+| `projects/<slug>/` | one self-contained study per folder — **your projects** (gitignored by default) |
 
 ## Quick start
 
@@ -45,6 +46,20 @@ bash scripts/doctor.sh          # verify
 
 Stages can also be invoked directly: `/ai-scientist-ideate`,
 `/ai-scientist-experiment`, `/ai-scientist-writeup`, `/ai-scientist-review`.
+
+## Projects & privacy
+
+Each study is a **self-contained project** under `projects/<slug>/` — idea, experiment
+code, logs, results, plots, paper, and review all live in that one folder (see
+[`projects/README.md`](./projects/README.md)). Nothing project-specific is scattered
+elsewhere; even the topic is copied in from its `ideas/` draft.
+
+Your projects (and `ideas/` topic drafts) are **gitignored by default**, so you can push
+the integration layer to a **public** remote without shipping your studies. Keeping this
+as a **private** repo and want to version your studies too? Comment out the `/projects/*`
+(and `/ideas/*`) line in [`.gitignore`](./.gitignore) — the toggle is documented inline
+there. A single `projects/<slug>/` is portable: copy it out and `git init` it as its own
+private repo.
 
 ## Requirements
 

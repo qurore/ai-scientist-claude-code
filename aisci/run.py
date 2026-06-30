@@ -1,4 +1,6 @@
-"""CLI for managing AI-Scientist study runs.
+"""CLI for managing AI-Scientist study projects.
+
+Each project is a self-contained study under ``projects/<id>/``.
 
     python -m aisci.run new   --slug my_study --topic "research topic"
     python -m aisci.run show  [--run <id>]
@@ -53,6 +55,31 @@ def cmd_set(args) -> int:
     return 0
 
 
+def cmd_decide(args) -> int:
+    """Append one major decision to the project's append-only decision log.
+
+    decisions.jsonl is the human-readable audit trail of *why* the study turned
+    out the way it did — the trail from idea to the produced artifact.
+    """
+    rid = _resolve(args.run)
+    st = state.load_state(rid)
+    stage = args.stage or st.get("stage", "ideate")
+    entry = {
+        "ts": state._stamp(),
+        "stage": stage,
+        "decision": args.decision,
+        "why": args.why,
+        "alternatives": [a.strip() for a in (args.alternatives or "").split(";") if a.strip()],
+        "evidence": args.evidence or "",
+    }
+    path = state.project_dir(rid) / "decisions.jsonl"
+    with path.open("a") as f:  # append-only
+        f.write(json.dumps(entry) + "\n")
+    state.append_study_log(rid, f"DECISION [{stage}]: {args.decision} — why: {args.why}")
+    print(json.dumps(entry))
+    return 0
+
+
 def cmd_list(args) -> int:
     if not state.RUNS.exists():
         return 0
@@ -86,6 +113,15 @@ def main(argv=None) -> int:
     pset.add_argument("--complete", action="store_true")
     pset.add_argument("--note", default=None)
     pset.set_defaults(func=cmd_set)
+
+    pd = sub.add_parser("decide", help="append a major decision to the project's audit log")
+    pd.add_argument("--run", default=None)
+    pd.add_argument("--decision", required=True, help="what was decided")
+    pd.add_argument("--why", required=True, help="the rationale")
+    pd.add_argument("--stage", choices=state.STAGES, default=None)
+    pd.add_argument("--alternatives", default=None, help="semicolon-separated options not taken")
+    pd.add_argument("--evidence", default=None, help="pointer to supporting result/file")
+    pd.set_defaults(func=cmd_decide)
 
     pl = sub.add_parser("list")
     pl.set_defaults(func=cmd_list)

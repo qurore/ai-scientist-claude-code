@@ -5,7 +5,7 @@ description: Stage 4 of the AI Scientist pipeline — produce a rigorous NeurIPS
 
 # Stage 4 — Review
 
-Act as a critical, fair conference reviewer of `runs/<id>/writeup/paper.pdf`. You can
+Act as a critical, fair conference reviewer of `projects/<id>/writeup/paper.pdf`. You can
 **read the PDF and its figures directly** (Read tool) — use that, plus the underlying
 `experiment/` results, to judge whether the paper's claims are actually supported.
 
@@ -26,7 +26,7 @@ Read these to match the exact rubric and scales.
    to `experiment/`, (b) any citation you can't verify is a real paper, (c) overclaiming
    beyond the small-scale evidence.
 
-## Review JSON schema (write to `runs/<id>/review.json`)
+## Review JSON schema (write to `projects/<id>/review.json`)
 ```json
 {
   "Summary": "What the paper does.",
@@ -53,12 +53,28 @@ Scales (match upstream): Originality/Quality/Clarity/Significance 1–4; Soundne
 Presentation/Contribution 1–4; Overall 1–10; Confidence 1–5; Decision ∈ {Accept, Reject}.
 
 ## Be honest and calibrated
-Laptop-scale studies rarely merit Accept — that's fine. A good, well-scoped negative
-result with honest reporting can still be a solid icbinb paper. Don't inflate scores;
-the value here is a *truthful* review.
+Score against a **high bar** — the standard of a strong paper at a top venue — but score
+**honestly**. The point of the review is a *truthful* signal that drives real improvement,
+so **never inflate**: a higher score must be earned by a genuinely better paper, not by a
+more generous reviewer. Both directions matter — a strong, rigorous, clearly-written study
+*can* merit Accept and a high Overall; a thin one should be marked as such with concrete,
+actionable weaknesses.
+
+Calibration reference: a strong paper *accepted* to the ICLR 2025 "I Can't Believe It's Not
+Better" (ICBINB) workshop averaged ~6.3/10 across three reviewers. Treat that as a floor to
+clear, not a ceiling — aim the *work* (not the scoring) at Overall ≥ 8. This skill feeds the
+improvement loop (`/ai-scientist-improve`): make the **Weaknesses** and **Questions**
+specific and actionable so the next revision can actually close them.
+
+**Do NOT penalize length or format.** This pipeline imposes no page/character limit (see the
+writeup skill), so judge only the *content*: correctness, rigor, novelty, significance,
+clarity, and how well claims are supported. Never lower `Presentation`, `Clarity`, or
+`Overall` because the paper is long/short or doesn't fit a venue's page count, and never add
+a "too long / exceeds page limit" weakness. A longer paper that is thorough and clear should
+score *well*, not be marked down for length.
 
 ## Outputs
-- `runs/<id>/review.json` (validate it parses; all schema fields present).
+- `projects/<id>/review.json` (validate it parses; all schema fields present).
 - Update `state.json`: `stage="review"`, `status="done"` → then set top-level study
   `status="complete"`. Append the verdict to `study.md`.
 

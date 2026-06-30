@@ -9,9 +9,12 @@ Generate **novel, feasible** research ideas for a topic and write them out in th
 AI-Scientist-v2 idea schema so the experiment stage can consume them.
 
 ## Inputs
-- A **topic** (a sentence) or a workshop-description markdown file under `ideas/`.
-  Template: `ideas/TEMPLATE_topic.md`. The example `vendor/AI-Scientist-v2/ai_scientist/ideas/i_cant_believe_its_not_better.md`
-  shows the expected style/length of a topic description.
+- A **topic** (a sentence) or a workshop-description markdown file staged under `ideas/`.
+  Template: `ideas/TEMPLATE_topic.md` (see `ideas/README.md`). `ideas/` is only a
+  *staging* area for drafting topics — the project itself is the home for everything,
+  so the topic gets copied into the project (below). The example
+  `vendor/AI-Scientist-v2/ai_scientist/ideas/i_cant_believe_its_not_better.md` shows the
+  expected style/length.
 - Optional: `--num <N>` ideas to generate (default 3), `--reflections <R>` refinement
   rounds (default 3).
 
@@ -39,12 +42,14 @@ Mirror upstream prompts and the FinalizeIdea schema:
 2. **Brainstorm** `N` candidate directions. For each, draft a Short Hypothesis.
 3. **Novelty check** each candidate against the literature so you don't reinvent known
    results:
-   - Preferred: the upstream Semantic Scholar tool. Quick way to run it through Claude
-     Code: `python -m bridge.run vendor/AI-Scientist-v2/ai_scientist/tools/semantic_scholar.py`
-     is not a CLI; instead use your **WebSearch** tool to search recent papers, OR call
-     the Semantic Scholar API directly with `curl`
-     (`https://api.semanticscholar.org/graph/v1/paper/search?query=...`). Set
-     `S2_API_KEY` in `.env` if the user has one (higher rate limits); it works without.
+   - Preferred: the `mcp__semantic-scholar__*` and `mcp__arxiv__*` MCP tools (paper
+     search, citation graph, recommendations), configured in `.mcp.json`. Check `/mcp`
+     if they don't show up as available tools — `scripts/doctor.sh` reports their
+     status under `[mcp]`. Set `SEMANTIC_SCHOLAR_API_KEY` in the shell env if the user
+     has one (higher rate limits); both servers work fine without a key.
+   - Fallback if the MCP servers aren't connected: your **WebSearch** tool, or call the
+     Semantic Scholar API directly with `curl`
+     (`https://api.semanticscholar.org/graph/v1/paper/search?query=...`).
    - Drop or sharpen ideas that already exist; note the closest prior work in
      "Related Work".
 4. **Reflect** `R` times: for each surviving idea, critique feasibility on *this* machine
@@ -52,12 +57,14 @@ Mirror upstream prompts and the FinalizeIdea schema:
    be small and concrete, and ensure metrics are specified.
 5. **Feasibility gate:** every idea's `Experiments` must be runnable on CPU/MPS with
    tiny/synthetic data in minutes-to-an-hour. Rewrite anything that needs a cluster.
-6. **Write outputs** into the run dir (create one if none is active):
-   - `runs/<id>/idea.json` — the JSON list (validate it parses).
-   - `runs/<id>/idea.md` — human-readable version (use
+6. **Write outputs** into the project dir (create one if none is active):
+   - `projects/<id>/topic.md` — copy the topic description in (from the `ideas/` draft
+     or the sentence you were given) so the project is self-contained and portable.
+   - `projects/<id>/idea.json` — the JSON list (validate it parses).
+   - `projects/<id>/idea.md` — human-readable version (use
      `aisci.run` helper or mirror upstream `idea_to_markdown`).
-   - Update `runs/<id>/state.json`: `stage="ideate"`, `status="done"`, `idea_slug=<Name of chosen idea>`.
-   - Append a short note to `runs/<id>/study.md`.
+   - Update `projects/<id>/state.json`: `stage="ideate"`, `status="done"`, `idea_slug=<Name of chosen idea>`.
+   - Append a short note to `projects/<id>/study.md`.
 
 ## Output to the user
 Present the ideas as a short ranked list (Title + one-line hypothesis + novelty note +
@@ -71,5 +78,5 @@ python -m bridge.run vendor/AI-Scientist-v2/ai_scientist/perform_ideation_temp_f
   --workshop-file ideas/<topic>.md --model gpt-4o-2024-11-20 \
   --max-num-generations 3 --num-reflections 3
 ```
-This writes `ideas/<topic>.json`. Copy it to `runs/<id>/idea.json`. Use this if the user
+This writes `ideas/<topic>.json`. Copy it to `projects/<id>/idea.json`. Use this if the user
 wants strict upstream parity; otherwise the native procedure above is preferred.

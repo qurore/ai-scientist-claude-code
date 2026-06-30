@@ -12,24 +12,31 @@ generate hypotheses, write and run experiment code, analyze results, write the p
 and review it, using your native tools (Edit/Write, Bash, Read for PDFs & images,
 WebSearch). No external LLM API keys are involved.
 
-## The four stages
+## The stages
 
 | Stage | Skill | Output |
 |------:|-------|--------|
-| 1. Ideation  | `ai-scientist-ideate`     | `runs/<id>/idea.json` (+ `idea.md`) |
-| 2. Experiments | `ai-scientist-experiment` | `runs/<id>/experiment/` results, metrics, plots |
-| 3. Writeup   | `ai-scientist-writeup`    | `runs/<id>/writeup/paper.pdf` |
-| 4. Review    | `ai-scientist-review`     | `runs/<id>/review.json` |
+| 1. Ideation  | `ai-scientist-ideate`     | `projects/<id>/idea.json` (+ `idea.md`, `topic.md`) |
+| 2. Experiments | `ai-scientist-experiment` | `projects/<id>/experiment/` results, metrics, plots |
+| 3. Writeup   | `ai-scientist-writeup`    | `projects/<id>/writeup/paper.pdf` (top-journal quality, no page limit) |
+| 4. Review    | `ai-scientist-review`     | `projects/<id>/review.json` |
+| 5. Improve (loop) | `ai-scientist-improve` | revise → re-review until honest Overall ≥ 8; `reviews/` history |
 
 Invoke a stage with its slash command (e.g. `/ai-scientist-ideate`) or just follow its
 SKILL.md. This umbrella skill coordinates them.
 
+**Record decisions as you go (enforced).** At each major decision — idea pivots, experiment
+redesigns, framing calls, the review verdict — append it to the project's append-only log:
+`aisci.run decide --decision "<what>" --why "<why>"`. The `enforce_decision_log` hook
+**blocks** closing a stage (`set --status done`/`--complete`) until its key decision is
+logged, so a human can later reconstruct how the result was produced.
+
 ## Run layout
 
-Every study lives in one directory: `runs/<YYYY-MM-DD_HH-MM-SS>_<slug>/`
+Every study is one self-contained project directory: `projects/<slug>/`
 
 ```
-runs/<id>/
+projects/<id>/
   state.json        # {stage, status, idea_slug, created, updated} — the source of truth
   idea.md/json      # stage 1
   experiment/
@@ -77,7 +84,7 @@ Tell the user the autopilot toggle exists; don't enable it silently.
   datasets, small models, CPU or Apple MPS, short training. Prefer toy problems that
   still test the hypothesis. Say so to the user up front for ambitious ideas.
 - Respect the user's budget. Each stage costs Claude Code tokens; the
-  `log-token-usage` hook tracks spend into `runs/<id>/experiment/token_log.jsonl` and
+  `log-token-usage` hook tracks spend into `projects/<id>/experiment/token_log.jsonl` and
   `.aisci_cache/bridge_calls.jsonl`. Summarize cost when you finish a study.
 
 ## Safety (enforced by hooks, but stay alert)

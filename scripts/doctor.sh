@@ -38,6 +38,10 @@ command -v pdflatex >/dev/null 2>&1 && ok "pdflatex" || warn "pdflatex missing (
 command -v pdftotext >/dev/null 2>&1 && ok "poppler (pdftotext)" || warn "poppler missing (brew install poppler)"
 command -v chktex >/dev/null 2>&1 && ok "chktex" || warn "chktex missing (brew install chktex)"
 
+echo "[mcp]"
+[ -x ".venv/bin/uvx" ] && ok "uvx present (.venv/bin/uvx) — arxiv/semantic-scholar MCP servers can launch" || warn "uvx missing — run scripts/setup.sh, or ideate/writeup fall back to WebSearch"
+python3 -c "import json;json.load(open('.mcp.json'))" 2>/dev/null && ok ".mcp.json valid JSON" || bad ".mcp.json missing or invalid"
+
 echo "[hooks]"
 for h in session_start guard_experiment_exec log_tool_use stop_autopilot; do
   [ -f ".claude/hooks/$h.py" ] && ok "hook $h.py" || bad "hook $h.py missing"

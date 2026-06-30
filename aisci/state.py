@@ -1,4 +1,11 @@
-"""Shared state/run-directory helpers for the AI-Scientist skills."""
+"""Shared state / project-directory helpers for the AI-Scientist skills.
+
+A *project* is one self-contained study: everything it produces (idea, code,
+logs, results, plots, paper, review, lab notebook) lives under its own folder
+``projects/<id>/``. Projects are gitignored by default (see .gitignore) so the
+integration layer can be pushed to a public remote without shipping your
+studies; un-ignore them to version your projects in a private repo.
+"""
 
 from __future__ import annotations
 
@@ -8,7 +15,7 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-RUNS = REPO / "runs"
+PROJECTS = REPO / "projects"
 CACHE = REPO / ".aisci_cache"
 
 STAGES = ["ideate", "experiment", "writeup", "review"]
@@ -23,50 +30,61 @@ def slugify(text: str) -> str:
     return (text or "study")[:48]
 
 
-def run_dir(run_id: str) -> Path:
-    return RUNS / run_id
+def project_dir(project_id: str) -> Path:
+    return PROJECTS / project_id
 
 
-def state_path(run_id: str) -> Path:
-    return run_dir(run_id) / "state.json"
+def state_path(project_id: str) -> Path:
+    return project_dir(project_id) / "state.json"
 
 
-def load_state(run_id: str) -> dict:
-    p = state_path(run_id)
+def load_state(project_id: str) -> dict:
+    p = state_path(project_id)
     if not p.exists():
-        raise FileNotFoundError(f"no state.json for run {run_id!r} ({p})")
+        raise FileNotFoundError(f"no state.json for project {project_id!r} ({p})")
     return json.loads(p.read_text())
 
 
-def save_state(run_id: str, state: dict) -> None:
+def save_state(project_id: str, state: dict) -> None:
     state["updated"] = _stamp()
-    state_path(run_id).write_text(json.dumps(state, indent=2))
+    state_path(project_id).write_text(json.dumps(state, indent=2))
 
 
-def set_current(run_id: str) -> None:
+def set_current(project_id: str) -> None:
     CACHE.mkdir(parents=True, exist_ok=True)
-    (CACHE / "current_run").write_text(run_id)
+    (CACHE / "current_run").write_text(project_id)
 
 
-def current_run() -> str | None:
+def current_project() -> str | None:
     p = CACHE / "current_run"
     if p.exists():
-        rid = p.read_text().strip()
-        if rid and run_dir(rid).exists():
-            return rid
+        pid = p.read_text().strip()
+        if pid and project_dir(pid).exists():
+            return pid
     return None
 
 
-def new_run(slug: str, topic: str = "") -> str:
+def _unique_id(slug: str) -> str:
+    """A clean, human-friendly project folder name (the slug), with a numeric
+    suffix on collision so each project stays in its own folder."""
+    pid = slug
+    n = 2
+    while project_dir(pid).exists():
+        pid = f"{slug}-{n}"
+        n += 1
+    return pid
+
+
+def new_project(slug: str, topic: str = "") -> str:
     slug = slugify(slug)
-    run_id = f"{_stamp()}_{slug}"
-    d = run_dir(run_id)
+    project_id = _unique_id(slug)
+    d = project_dir(project_id)
     for sub in ("experiment/code", "experiment/logs",
                 "experiment/experiment_results", "experiment/plots",
                 "writeup"):
         (d / sub).mkdir(parents=True, exist_ok=True)
     state = {
-        "run_id": run_id,
+        "run_id": project_id,
         "slug": slug,
         "topic": topic,
         "stage": "ideate",
@@ -75,16 +93,23 @@ def new_run(slug: str, topic: str = "") -> str:
         "created": _stamp(),
         "updated": _stamp(),
     }
-    save_state(run_id, state)
+    save_state(project_id, state)
     (d / "study.md").write_text(
-        f"# Study: {slug}\n\n- **Run id:** {run_id}\n- **Topic:** {topic}\n\n"
-        f"## Log\n\n- {_stamp()} — study created (stage: ideate)\n"
+        f"# Project: {slug}\n\n- **Project id:** {project_id}\n- **Topic:** {topic}\n\n"
+        f"## Log\n\n- {_stamp()} — project created (stage: ideate)\n"
     )
-    set_current(run_id)
-    return run_id
+    set_current(project_id)
+    return project_id
 
 
-def append_study_log(run_id: str, line: str) -> None:
-    p = run_dir(run_id) / "study.md"
+def append_study_log(project_id: str, line: str) -> None:
+    p = project_dir(project_id) / "study.md"
     with p.open("a") as f:
         f.write(f"- {_stamp()} — {line}\n")
+
+
+# ── Back-compat aliases (older code/skills used "run" terminology) ──────────
+RUNS = PROJECTS
+run_dir = project_dir
+new_run = new_project
+current_run = current_project

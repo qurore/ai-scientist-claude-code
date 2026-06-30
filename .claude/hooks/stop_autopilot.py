@@ -95,7 +95,7 @@ def main():
         "decision": "block",
         "reason": (
             f"[autopilot {n+1}/{MAX_ADVANCES}] Study {rid}: {action}. "
-            f"Keep `runs/{rid}/state.json` and study.md updated. When the whole "
+            f"Keep `projects/{rid}/state.json` and study.md updated. When the whole "
             f"pipeline is finished, run `aisci.run set --complete` so autopilot stops."
         ),
     }))

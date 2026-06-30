@@ -17,7 +17,7 @@ results, debug, and iterate — keeping a journal so the search is resumable.
 canonical hyperparameters. Read these to stay faithful to the method.
 
 ## Inputs
-- `runs/<id>/idea.json` (chosen idea; `state.idea_slug` selects which one).
+- `projects/<id>/idea.json` (chosen idea; `state.idea_slug` selects which one).
 - Hyperparameters (defaults mirror `bfts_config.yaml`, scaled down for a laptop):
   `num_drafts=3`, `max_debug_depth=3`, `num_seeds=3`, per-stage iteration caps
   `[stage1=20, stage2=12, stage3=12, stage4=18]`. **On this machine, cut caps to a
@@ -33,7 +33,7 @@ canonical hyperparameters. Read these to stay faithful to the method.
 4. **Ablation** — remove/vary components to isolate what matters.
 
 ## Tree-search loop (per stage)
-Maintain `runs/<id>/experiment/journal.jsonl`; one JSON line per node:
+Maintain `projects/<id>/experiment/journal.jsonl`; one JSON line per node:
 ```json
 {"id":"n3","parent":"n1","stage":1,"plan":"...","code_path":"code/n3.py",
  "metric":0.83,"is_buggy":false,"seeds":[0,1,2],"notes":"...","ts": 0}
@@ -44,7 +44,7 @@ Procedure:
 2. **Execute** each via the run helper so output/metrics are captured to
    `experiment/logs/` and `experiment/experiment_results/`:
    ```bash
-   .venv/bin/python -m aisci.exec runs/<id> code/n3.py --timeout 1800
+   .venv/bin/python -m aisci.exec projects/<id> code/n3.py --timeout 1800
    ```
    The script must print a JSON metrics line (e.g. `{"metric": 0.83, "loss": ...}`) or
    write `experiment_results/<node>.json`. Capture stdout/stderr to the log.
@@ -59,7 +59,7 @@ Procedure:
    mean ± std.
 
 ## Execution rules (safety)
-- All code, data, and outputs stay **inside `runs/<id>/experiment/`**. Never write
+- All code, data, and outputs stay **inside `projects/<id>/experiment/`**. Never write
   outside the run dir.
 - Datasets: prefer synthetic generators or tiny built-in datasets (e.g. sklearn toy
   sets, `torchvision` MNIST-scale only if small). Don't download large datasets.
@@ -90,7 +90,7 @@ total wall-clock + token cost. Offer to proceed to `/ai-scientist-writeup`.
 Heavy and GPU-oriented, but available:
 ```bash
 python -m bridge.run vendor/AI-Scientist-v2/launch_scientist_bfts.py \
-  --load_ideas runs/<id>/idea.json --idea_idx 0 --skip_writeup --skip_review
+  --load_ideas projects/<id>/idea.json --idea_idx 0 --skip_writeup --skip_review
 ```
 Requires `torch`+`psutil` (see `scripts/setup.sh`). Routes all agent LLM calls through
 Claude Code. Use only if the user explicitly wants upstream parity.
