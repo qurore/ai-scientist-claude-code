@@ -9,11 +9,32 @@ Take an existing study and make it **genuinely better** on the same theme until 
 review clears the target score. This is the mechanism that turns a first draft into a
 strong paper.
 
-## Target and bound
-- **Target:** Overall ≥ `AISCI_IMPROVE_TARGET` (default **8/10**).
-- **Bound:** at most `AISCI_IMPROVE_MAX_ITERS` iterations (default **4**) so cost is finite.
-- Calibration: a strong paper *accepted* to the ICLR 2025 ICBINB workshop averaged ~6.3/10.
-  Clear that floor and aim for ≥ 8 — but only by being genuinely better.
+## Target, publishing cadence, and how long to keep going
+The loop runs in **three phases**. Re-reviews stay blind and honest throughout (see Integrity);
+publishing is a separate, human-facing step via `/ai-scientist-publish` (Zenodo).
+
+1. **Reach the target.** Iterate until the honest blind Overall ≥ `AISCI_IMPROVE_TARGET`
+   (default **8/10**), or until real improvement plateaus below it (then stop and say so — a
+   truthful 6.5 beats a fake 8). Calibration: a strong paper accepted to the ICLR 2025 ICBINB
+   workshop averaged ~6.3/10; clear that floor. `AISCI_IMPROVE_MAX_ITERS` (default **4**) bounds
+   *this* search so cost stays finite. **On first reaching the target, publish once** to Zenodo
+   (the current `paper.pdf`) so a citable record exists the moment the bar is cleared.
+2. **Two guaranteed refinement iterations.** After first hitting the target, run **exactly two
+   more iterations**. The Overall may already sit at the ceiling, so the bar here is **per-item**:
+   if **any** score item improves — the Overall *or any sub-score* (Soundness, Significance,
+   Quality, Clarity, Contribution, Originality, Presentation) — over the currently-published
+   version, **publish the improved version** (Zenodo *new version*: the concept DOI stays stable,
+   a new version DOI is minted). If both pass with no item improved, don't republish.
+3. **Open-ended — your own judgment.** After those two, **you decide** whether to continue: keep
+   iterating for as long as you genuinely see an improvement worth its token cost, and **stop when
+   you judge further work is no longer worthwhile.** That satisfaction call is yours to make each
+   iteration — state it explicitly in the learning log (what you'd try, why you do or don't expect
+   it to move an item, and your decision). Whenever any item improves, publish the new version.
+   Honesty binds all three phases: never iterate just to look busy, and never publish a version
+   that is not genuinely better on some item.
+
+Phases 2–3 are governed by the per-item-improvement and judgment rules above, not by
+`AISCI_IMPROVE_MAX_ITERS`. The human can stop the loop at any time.
 
 ## Integrity (read this first — it is the whole point)
 - **The score must rise through real improvement, never through a more lenient review.**
@@ -110,8 +131,15 @@ Like `reviews/`, the learning ledger is **meta** (for the human and the next ite
    actual Overall + delta, (3) delta verification — why the gap, citing the review, the
    results, and relevant literature (arxiv / semantic-scholar MCP), (4) the plan for the next
    iteration. This is the memory the next iteration reads first.
-6. **Decide to continue or stop.** If Overall ≥ target → stop (success). If iteration cap
-   reached → stop (report honest score + gap). Otherwise loop to step 1.
+6. **Publish and decide, per the three-phase cadence** (see "Target, publishing cadence…").
+   - **Phase 1 (below target):** if Overall ≥ target now → **publish to Zenodo** (first citable
+     record) and enter phase 2; if the iteration cap is hit still below target → stop (report the
+     honest score + gap); otherwise loop to step 1.
+   - **Phase 2 (the two guaranteed refinements):** if **any** item improved over the published
+     version → **publish a Zenodo new version**. After the second refinement, enter phase 3.
+   - **Phase 3 (your judgment):** decide whether another iteration is genuinely worth its cost;
+     if yes, loop to step 1 (publishing a new version whenever an item improves); if no, stop and
+     report the trajectory. Record the judgment in the learning log.
 
 ## Versioning — reviews yes, implementation no
 - **Reviews are versioned.** Keep the *full* review history so the trajectory is auditable
