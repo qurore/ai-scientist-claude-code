@@ -41,6 +41,11 @@ Maintain `projects/<id>/experiment/journal.jsonl`; one JSON line per node:
 Procedure:
 1. **Draft:** create `num_drafts` independent initial implementations (different
    approaches) as root nodes. Keep each script self-contained under `experiment/code/`.
+   **Parallelize independent branches with sub-agents:** when several drafts/configs are
+   genuinely independent, spawn one sub-agent per branch — each writes and runs its own
+   script under `experiment/code/` (heavy nodes via `--backend colab`) and reports its
+   metric; you then merge them into the journal and pick the best. Use this for real
+   parallelism, not for sequential debugging of one branch.
 2. **Execute** each via the run helper so output/metrics are captured to
    `experiment/logs/` and `experiment/experiment_results/`:
    ```bash

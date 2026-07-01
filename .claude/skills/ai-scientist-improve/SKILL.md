@@ -50,8 +50,37 @@ This is enforced-by-convention via the helper (it flips `[ ]`→`[x]` and append
 annotation); never hand-edit the checkboxes. Human ideas are tested with the same rigor and
 honesty as everything else — confirm only what the experiments support.
 
+## Iteration-learning ledger (mandatory — read the last 5, write one each iteration)
+This loop must **learn across iterations**, not just churn. Each iteration keeps an explicit
+learning log at `projects/<id>/learnings/iter_<NNN>.md`. It is the loop's memory and the
+mechanism that makes later iterations smarter than earlier ones.
+
+- **Read at the START of every iteration:** the **last ≤5** learning logs
+  (`learnings/iter_*.md`, highest numbers first). Use them to set this iteration's strategy —
+  did the previous plan work? was the expected↔actual score gap explained and closed? Then
+  **explicitly decide** whether to *follow, adjust, or drop* the prior iteration's stated
+  plan, and say why. You are not bound to the old plan; judge it against the evidence.
+- **Predict before the re-review:** state the Overall you *expect* this iteration to earn,
+  with brief reasoning. This is your own forecast; it never reaches the blind reviewer (who
+  still sees only the paper + results). Forecasting then checking builds calibration.
+- **Write at the END of every iteration:** `learnings/iter_<NNN>.md` with exactly these parts:
+  1. **What I did** — the concrete revisions (experiments added, rewrites) and why.
+  2. **Expected vs actual** — predicted Overall (from before the re-review), the actual blind
+     Overall, and the **delta**.
+  3. **Delta verification** — investigate *why* the gap, honestly, citing evidence: the
+     review's specific weaknesses/notes, the experiment results, and **external/research
+     resources** (relevant literature via the arxiv / semantic-scholar MCP) where they explain
+     it. Which of your assumptions was wrong?
+  4. **Plan for next iteration** — the concrete strategy/direction you resolve to investigate,
+     and why.
+
+Like `reviews/`, the learning ledger is **meta** (for the human and the next iteration) and is
+**never** shown to the blind reviewer.
+
 ## Procedure (one iteration)
-0. **Consult the human-idea inbox** (above) and merge any open ideas into the plan.
+0. **Load memory & inbox.** Read the **last ≤5** `learnings/iter_*.md` and decide this
+   iteration's strategy (follow / adjust / drop the prior plan — say why). Then consult the
+   human-idea inbox (above) and merge any open ideas into the plan.
 1. **Read the latest review** `projects/<id>/review.json`. Rank its Weaknesses/Questions by
    how much each holds down Overall and the sub-scores (Soundness, Significance, Quality,
    Clarity, Contribution).
@@ -69,12 +98,18 @@ honesty as everything else — confirm only what the experiments support.
    `aisci.run decide --stage <experiment|writeup> --decision "…" --why "…" --evidence "…"`.
 4. **Re-run the affected stage(s)** — regenerate results, plots, and the paper; recompile to
    PDF; re-read it.
+4b. **Predict** the Overall you expect this iteration to earn (your own forecast + brief
+   reasoning). Record it now, before the re-review; do **not** show it to the reviewer.
 5. **Re-review** honestly using the full `/ai-scientist-review` rubric (which does **not**
    penalize length — see that skill). Version the review (see "Versioning" below):
    - before the first revision, copy the existing `review.json` → `reviews/review_000.json`,
    - write the new `review.json` and also save it as `reviews/review_<NNN>.json`,
    - append a line to `reviews/score_history.jsonl`,
    - record the move: `aisci.run decide --stage review --decision "iteration <k>: Overall <old>→<new>" --why "<what changed and why it moved the score>" --evidence "reviews/review_<NNN>.json"`.
+5b. **Write the learning log** `learnings/iter_<NNN>.md`: (1) what I did, (2) expected vs
+   actual Overall + delta, (3) delta verification — why the gap, citing the review, the
+   results, and relevant literature (arxiv / semantic-scholar MCP), (4) the plan for the next
+   iteration. This is the memory the next iteration reads first.
 6. **Decide to continue or stop.** If Overall ≥ target → stop (success). If iteration cap
    reached → stop (report honest score + gap). Otherwise loop to step 1.
 

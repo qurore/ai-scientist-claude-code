@@ -131,6 +131,9 @@ def run_colab(run_id: str, exp: Path, script_rel: str, node: str,
         "seed": seed,
         "created": time.time(),
     }, indent=2))
+    # Give Drive time to upload the code/ files before signaling READY, so the runner
+    # never sees READY before the script has synced (a Drive sync race, not atomic).
+    time.sleep(int(os.environ.get("AISCI_COLAB_SYNC_WAIT", "10")))
     (jobs / "READY").write_text(str(time.time()))  # written last → atomic-ish handoff
 
     poll = int(os.environ.get("AISCI_COLAB_POLL", "10"))

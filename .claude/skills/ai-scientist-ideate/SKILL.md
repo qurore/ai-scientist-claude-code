@@ -36,12 +36,29 @@ Mirror upstream prompts and the FinalizeIdea schema:
 }
 ```
 
+## Aim for a breakthrough (swing for the fences)
+Prefer a **bold, novel leap** over a safe increment. The best outcome is a *surprising,
+field-relevant insight* — a falsifiable claim that, if it holds, changes how people think, or
+that cleanly overturns a common intuition. Ambition here is about the **idea**, not raw scale:
+a sharp angle can land a home run even on a laptop (e.g. "the Hessian *trace* is the wrong
+curvature scalar for the learning rate — the top eigenvalue is right", or "sharpness governs
+learning-rate stability yet is *irrelevant* to grokking timing"). Generate at least one
+genuinely high-risk / high-reward candidate every time, and push each idea for the most
+non-obvious, load-bearing claim it can make. Honesty is the guardrail, not timidity: a boldly
+tested idea that partly fails, reported truthfully, beats a timid sure thing — but never trade
+rigor or truthfulness for ambition.
+
 ## Procedure
 1. **Understand the topic.** If it's a file, read it. If it's a sentence and ambiguous,
    ask 1–2 clarifying questions (domain, datasets allowed, compute budget).
-2. **Brainstorm** `N` candidate directions. For each, draft a Short Hypothesis.
+2. **Brainstorm** `N` candidate directions (include ≥1 breakthrough swing). For each, draft a
+   Short Hypothesis.
 3. **Novelty check** each candidate against the literature so you don't reinvent known
-   results:
+   results. **Parallelize the legwork with sub-agents:** spawn one `Explore` (or
+   general-purpose) sub-agent *per candidate*, each running the arxiv / semantic-scholar
+   searches for its idea and returning the closest prior work + a novelty verdict; then you
+   merge the findings and judge. (Sub-agents start cold, so use them for genuinely independent,
+   parallel searches — not for one quick lookup.) To do the checks yourself instead:
    - Preferred: the `mcp__semantic-scholar__*` and `mcp__arxiv__*` MCP tools (paper
      search, citation graph, recommendations), configured in `.mcp.json`. Check `/mcp`
      if they don't show up as available tools — `scripts/doctor.sh` reports their

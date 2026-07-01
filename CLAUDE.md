@@ -106,8 +106,19 @@ injunctions in multiple jurisdictions.
 - **Never fabricate** results or citations. Every number in a paper must trace to a file
   in `experiment/`; every citation must be a real, findable paper. Report failures and
   nuance honestly — a strong *honest* result (positive, negative, or mixed) is the goal.
+- **Primary sources over speculation.** Whenever anything is uncertain — a fact, a citation,
+  an API's behavior, how a piece of code works, a numeric claim — go to the *primary source*
+  instead of guessing: the paper itself (via the arxiv / semantic-scholar MCP; verify every
+  citation there, never cite from memory), the actual code (Read it), the real output (run it),
+  or a web search. If a claim cannot be grounded in a primary source, say so rather than
+  asserting it.
 - **Aim high, don't pre-constrain.** Papers target top-journal quality; do not impose a
   page limit or a venue format up front (see the writeup skill). Length follows content.
+- **Swing for breakthroughs.** In ideation, prefer a bold, novel, falsifiable leap that could
+  overturn a common intuition over a safe increment — ambition is about the *idea*, not scale;
+  honesty is the guardrail, never sacrificed for ambition. Parallelize research legwork
+  (per-candidate novelty checks, independent experiment branches) with **sub-agents** when the
+  work is genuinely independent (they start cold, so don't use them for one quick lookup).
 - **Cost:** every stage spends Claude Code tokens. Bridge calls are logged to
   `.aisci_cache/bridge_calls.jsonl`; summarize spend when a study finishes.
 
@@ -133,7 +144,11 @@ verdict.
 **real** improvement; the review stays calibrated and is never inflated to "reach" the
 target. To keep the score meaningful, the re-review is **blind**: the reviewer sees only the
 paper + experiment results, never the iteration number, prior reviews, or scores. Reviews are
-versioned (`projects/<id>/reviews/`, `score_history.jsonl`); the implementation is not.
+versioned (`projects/<id>/reviews/`, `score_history.jsonl`); the implementation is not. Each
+iteration also writes a **learning log** `projects/<id>/learnings/iter_<NNN>.md` — what was
+done, *expected vs actual* Overall + the delta, a verification of that gap (citing the review,
+results, and literature), and the plan for next time; the next iteration reads the **last ≤5**
+learning logs first and decides whether to follow, adjust, or drop the prior plan.
 
 ### Human-idea inbox (per project)
 Each project holds `projects/<id>/human_ideas.md` — created empty — where a human can drop a
