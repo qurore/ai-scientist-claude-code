@@ -98,8 +98,9 @@ def new_project(slug: str, topic: str = "") -> str:
         f"# Project: {slug}\n\n- **Project id:** {project_id}\n- **Topic:** {topic}\n\n"
         f"## Log\n\n- {_stamp()} — project created (stage: ideate)\n"
     )
-    from . import ideas  # local import avoids a circular import at module load
+    from . import ideas, literature  # local import avoids a circular import at module load
     ideas.ensure(project_id, slug)
+    literature.ensure(project_id, slug)
     set_current(project_id)
     return project_id
 

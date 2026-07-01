@@ -150,6 +150,14 @@ done, *expected vs actual* Overall + the delta, a verification of that gap (citi
 results, and literature), and the plan for next time; the next iteration reads the **last ≤5**
 learning logs first and decides whether to follow, adjust, or drop the prior plan.
 
+**Publishing cadence + mandatory literature refresh.** On first clearing the target the paper is
+published to Zenodo; two guaranteed refinement iterations follow (republish a new version if *any*
+score item improves), then the loop continues at the agent's own judgment. Every iteration **must**
+run a fresh literature refresh (arxiv / semantic-scholar MCP) *before* planning — what's new since
+last time, and whether this iteration's change is genuinely novel — recorded in the per-project
+append-only survey log `projects/<id>/literature.md` (`aisci.run lit`), which every iteration reads
+first. See the improve skill for the full three-phase cadence and the refresh procedure.
+
 ### Human-idea inbox (per project)
 Each project holds `projects/<id>/human_ideas.md` — created empty — where a human can drop a
 hypothesis or "try this" at **any time**. At the start of every improvement-loop iteration the

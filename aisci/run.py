@@ -100,6 +100,18 @@ def cmd_idea_resolve(args) -> int:
     return 0
 
 
+def cmd_lit(args) -> int:
+    """Append one structured literature-refresh entry to the project's survey log
+    (literature.md), shared across all improvement-loop iterations."""
+    rid = _resolve(args.run)
+    from . import literature
+    res = literature.append(rid, args.context or "refresh", args.queries or "",
+                            args.found or "", args.verdict or "", args.impact or "")
+    state.append_study_log(rid, f"LIT REFRESH [{args.context or 'refresh'}]: {args.verdict or ''}")
+    print(json.dumps(res))
+    return 0
+
+
 def cmd_list(args) -> int:
     if not state.RUNS.exists():
         return 0
@@ -154,6 +166,16 @@ def main(argv=None) -> int:
                      choices=["confirmed", "refuted", "inconclusive"])
     pir.add_argument("--note", default=None)
     pir.set_defaults(func=cmd_idea_resolve)
+
+    plit = sub.add_parser("lit", help="append a literature-refresh entry to the project survey log")
+    plit.add_argument("--run", default=None)
+    plit.add_argument("--context", default=None, help='e.g. "iter 3 refresh" or "ideation"')
+    plit.add_argument("--queries", default=None, help="what was searched (terms/ids/citation hops)")
+    plit.add_argument("--found", default=None, help="key papers found: Title (arXiv id) — relevance")
+    plit.add_argument("--verdict", default=None,
+                      help="nothing-new | scooped | replicate-extend [cite] | contradicted | novel-confirmed")
+    plit.add_argument("--impact", default=None, help="how it changed the plan/claims/citations")
+    plit.set_defaults(func=cmd_lit)
 
     pl = sub.add_parser("list")
     pl.set_defaults(func=cmd_list)
