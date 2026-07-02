@@ -126,6 +126,12 @@ what was known at each point. Three required parts of the scan itself:
    already-published delay law — converting a novelty trap into an $r{=}0.98$ replication.)
 3. **Ground every new citation in the primary source.** Any reference the revision adds is verified
    real and characterized from the paper itself (abstract/text via the MCP), never from memory.
+   And cite **actively**: when the refresh surfaces genuinely relevant work the paper doesn't yet
+   engage, work it into Related Work / Discussion rather than noting it and moving on — a
+   top-journal paper engages a broad literature (~30–60 load-bearing references is typical), and
+   thin related-work coverage is itself a reviewable weakness. The guardrail is the same as the
+   writeup skill's: every added citation must be load-bearing (tied to a specific claim it
+   supports or contrasts with), never a decorative dump.
 
 **Parallelize with sub-agents** when the angles are independent (e.g., one `Explore`/general-purpose
 sub-agent per planned change or per claim to novelty-check), then merge their findings. **Append the

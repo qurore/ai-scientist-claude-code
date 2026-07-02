@@ -44,8 +44,25 @@ carry venue branding — prefer the neutral setup below.
    Put figures in `projects/<id>/writeup/figures/`.
 2. **Gather citations.** Build `references.bib` from real papers via the
    `mcp__semantic-scholar__*` / `mcp__arxiv__*` MCP tools (or WebSearch / the Semantic
-   Scholar API via `curl`). Verify each exists — **never invent citations**. Aim for
-   genuinely relevant, well-chosen related work (breadth + the key prior art).
+   Scholar API via `curl`). Verify each exists — **never invent citations**.
+   **Cite actively, not minimally.** A top-journal paper situates itself in a broad
+   literature; err on the side of engaging *more* prior work, never less. Run a
+   separate, explicit search pass for each of these categories:
+   - direct prior work on the same question — including anything that could be read as
+     scooping, partially anticipating, or contradicting the result;
+   - the original source of every method, model, dataset, metric, and baseline used;
+   - the theoretical / background work the argument rests on;
+   - adjacent lines a reader would expect the paper positioned against (same phenomenon
+     with different tools; same tools on a different phenomenon);
+   - recent work (≈ last 2 years) showing where the field is now.
+   Mature papers typically carry ~30–60 references; treat a short bibliography as a
+   symptom of incomplete coverage, not a virtue — go back and search the missing
+   categories rather than accepting it. The anti-padding rule that keeps this honest:
+   every citation must be **load-bearing** — attached to a specific point in the text
+   where it supports, informs, or contrasts with a specific claim, with at least a
+   phrase saying *how* it relates. Never add a reference you haven't verified or can't
+   say something concrete about; a bare citation dump (`[3,7,12,19]` with no
+   discussion) is padding, not coverage.
 3. **Write the paper** section by section, grounded **only** in `experiment/` results:
    Title, Abstract, Introduction, Related Work, Method, Experimental Setup, Experiments &
    Results (real numbers, mean±std, from `experiment_results/summary.json`; figures from
@@ -71,7 +88,9 @@ carry venue branding — prefer the neutral setup below.
 ## Guardrails
 - Every number in the paper must trace to a file in `experiment/`. If a result is missing,
   run it (back to Stage 2) or omit the claim — do not fabricate.
-- Every citation must be a real, findable paper.
+- Every citation must be a real, findable paper — and **load-bearing**: tied in the text
+  to a specific claim it supports or contrasts with. Breadth comes from searching more
+  categories of related work, never from decorative citations.
 - Quality over brevity: never remove real content, experiments, or nuance to satisfy a
   page budget. There is no page budget.
 
