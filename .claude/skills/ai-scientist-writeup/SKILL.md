@@ -63,6 +63,9 @@ carry venue branding — prefer the neutral setup below.
    phrase saying *how* it relates. Never add a reference you haven't verified or can't
    say something concrete about; a bare citation dump (`[3,7,12,19]` with no
    discussion) is padding, not coverage.
+   Verifying each citation by hand via the MCP is the primary defense; step 7 adds a
+   **deterministic backstop** (`aisci.bibcheck`) that catches any fabricated entry that
+   slips through, so build the `.bib` with real DOIs / arXiv ids where possible.
 3. **Write the paper** section by section, grounded **only** in `experiment/` results:
    Title, Abstract, Introduction, Related Work, Method, Experimental Setup, Experiments &
    Results (real numbers, mean±std, from `experiment_results/summary.json`; figures from
@@ -81,7 +84,21 @@ carry venue branding — prefer the neutral setup below.
    can see it), check figures render, captions match and are self-contained, every claim is
    supported, the prose is clear and complete, and the argument is tight. Revise and
    recompile. Improve quality; do **not** cut substance to hit a length.
-7. **Finalize:** copy the final PDF to `projects/<id>/writeup/paper.pdf`. Record the key
+7. **Verify citations deterministically (enforced).** Before finalizing, run the
+   citation checker — it parses `references.bib` and confirms every entry is a real,
+   findable paper against the Crossref + arXiv APIs (no LLM/MCP), writing
+   `writeup/bibcheck.json`:
+   ```bash
+   .venv/bin/python -m aisci.bibcheck projects/<id>
+   ```
+   Fix every **blocking** entry (`not_found` = a DOI/arXiv id that doesn't resolve;
+   `unresolved` = a title no real paper matches — both are hallucination signals):
+   correct the identifier/title against the real paper (re-verify via the arxiv /
+   semantic-scholar MCP) or remove the reference, then re-run until it reports CLEAN.
+   `title_mismatch` / `no_query` are warnings — check them but they don't block.
+   The `enforce_bibcheck` hook **blocks** marking this stage done until a fresh, clean
+   report exists, so there is no way to ship a paper with an unverified citation.
+8. **Finalize:** copy the final PDF to `projects/<id>/writeup/paper.pdf`. Record the key
    writeup decisions (`aisci.run decide …`), then update `state.json`:
    `stage="writeup"`, `status="done"`.
 
@@ -90,11 +107,14 @@ carry venue branding — prefer the neutral setup below.
   run it (back to Stage 2) or omit the claim — do not fabricate.
 - Every citation must be a real, findable paper — and **load-bearing**: tied in the text
   to a specific claim it supports or contrasts with. Breadth comes from searching more
-  categories of related work, never from decorative citations.
+  categories of related work, never from decorative citations. `aisci.bibcheck` (step 7,
+  hook-enforced) is the deterministic proof that none are fabricated — never route around
+  it by hand-editing `bibcheck.json`; fix the real reference instead.
 - Quality over brevity: never remove real content, experiments, or nuance to satisfy a
   page budget. There is no page budget.
 
 ## Output to the user
-Report: compile status (clean?), figure list, citation count, page count (as an
-*observation*, not a target), and the path to `paper.pdf`. Offer to proceed to
-`/ai-scientist-review` (or to the improvement loop, `/ai-scientist-improve`).
+Report: compile status (clean?), figure list, citation count **and bibcheck verdict
+(N verified / 0 blocking)**, page count (as an *observation*, not a target), and the
+path to `paper.pdf`. Offer to proceed to `/ai-scientist-review` (or to the improvement
+loop, `/ai-scientist-improve`).

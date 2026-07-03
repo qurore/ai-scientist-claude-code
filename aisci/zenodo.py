@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import tempfile
 import urllib.error
@@ -119,6 +120,7 @@ def _paper_title(run_id: str):
         return None
     t = m.group(1)
     t = t.replace("\\bfseries", "").replace("\\\\", " ")
+    t = t.replace("$", "")   # drop LaTeX math delimiters: "$n$-gram" -> "n-gram"
     t = re.sub(r"\s+", " ", t).strip()
     return t or None
 
@@ -166,7 +168,9 @@ def build_metadata(run_id: str, publication_type: str = "preprint"):
     stop = {"does", "the", "and", "when", "win", "across", "study", "predict", "right",
             "with", "study", "help", "from", "into", "their", "that", "this", "schedule?",
             "will", "grok?", "early", "cheap", "prediction", "delayed"}
-    words = [w.strip(",:.?").lower() for w in title.split()]
+    # Strip LaTeX math/commands ($...$, braces, backslashes) so a math-in-title
+    # word like "$n$-gram" becomes the clean keyword "n-gram" on the permanent record.
+    words = [re.sub(r"[${}\\]", "", w.strip(",:.?").lower()) for w in title.split()]
     kws = [w for w in dict.fromkeys(words) if len(w) > 4 and w not in stop][:5]
     # Study-specific keywords if the project supplies them (summary.json / idea.json);
     # otherwise just a generic tag. Never hard-code one study's topic here -- that leaks

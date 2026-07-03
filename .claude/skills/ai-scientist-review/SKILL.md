@@ -32,7 +32,11 @@ function of the paper itself (no anchoring or leniency from "it has improved").
    any figure whose claim isn't supported by `experiment_results/`.
 4. **Integrity checks specific to autonomous papers:** flag (a) any number not traceable
    to `experiment/`, (b) any citation you can't verify is a real paper, (c) overclaiming
-   beyond the small-scale evidence.
+   beyond the small-scale evidence. For (b), the deterministic checker's report at
+   `writeup/bibcheck.json` (from `aisci.bibcheck`) is a starting signal — confirm it is
+   present, fresh (its `bib_sha256` matches the current `references.bib`), and reports
+   `blocking: 0`; then still spot-check a few citations yourself, since the checker only
+   proves a paper *exists*, not that it says what the text claims it says.
 
 ## Review JSON schema (write to `projects/<id>/review.json`)
 ```json

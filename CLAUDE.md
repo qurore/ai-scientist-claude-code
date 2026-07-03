@@ -19,7 +19,7 @@ review it, with your own tools. No external LLM API keys are used.
 
 ```
 .claude/skills/        ai-scientist (orchestrator) + ideate/experiment/writeup/review
-.claude/hooks/         session_start, guard_experiment_exec, log_tool_use, stop_autopilot
+.claude/hooks/         session_start, guard_experiment_exec, enforce_decision_log, enforce_bibcheck, log_tool_use, stop_autopilot
 .claude/settings.json  wires the hooks; default-off autopilot; minimal permissions
 .mcp.json              project-shared MCP servers: arxiv, semantic-scholar (literature search)
 aisci/                 thin python helpers the skills shell out to (run/exec/latex/state)
@@ -135,6 +135,26 @@ This is **enforced**: the `enforce_decision_log` PreToolUse hook **blocks** mark
 `--status done` / `--complete` until at least one decision is logged for that stage. Log
 decisions as you make them — idea pivots, experiment redesigns, framing calls, the review
 verdict.
+
+## Citation integrity — no hallucinated references (enforced)
+
+"Never fabricate citations" is backed by a **deterministic** check, not just discipline.
+`aisci.bibcheck` parses a project's `references.bib` and confirms each entry is a real,
+findable paper via the **Crossref + arXiv public APIs** (no LLM, no MCP), writing a report
+to `projects/<id>/writeup/bibcheck.json`:
+```bash
+.venv/bin/python -m aisci.bibcheck projects/<id>
+```
+It flags the concrete hallucination signals — a DOI/arXiv id that doesn't resolve
+(`not_found`) or a title no real paper matches (`unresolved`) — as **blocking**; messy
+metadata (`title_mismatch`) and id-less entries (`no_query`) are non-blocking warnings.
+This is **enforced**: the `enforce_bibcheck` PreToolUse hook **blocks** marking the
+writeup stage `--status done` (and the study `--complete`) until a report exists that is
+**fresh** (its `bib_sha256` matches the current `references.bib`, so you can't pass an old
+report then edit the bib) and **clean** (zero blocking, and at least one citation actually
+verified — an all-offline report doesn't count). The hook only reads the JSON, never the
+network. Fix flagged references against the real paper (verify via the arxiv /
+semantic-scholar MCP) — never hand-edit `bibcheck.json` to get past the gate.
 
 ## Improvement loop
 
