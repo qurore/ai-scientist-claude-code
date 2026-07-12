@@ -20,6 +20,27 @@ CACHE = REPO / ".aisci_cache"
 
 STAGES = ["ideate", "experiment", "writeup", "review"]
 
+RUBRICS = REPO / "config" / "rubrics"
+DEFAULT_RUBRIC = "neurips-ml"
+
+
+def list_rubrics() -> list[str]:
+    """Names of the review rubrics available in the registry (config/rubrics/)."""
+    if not RUBRICS.exists():
+        return []
+    return sorted(p.stem for p in RUBRICS.glob("*.md") if p.name != "README.md")
+
+
+def rubric_path(name: str) -> Path:
+    return RUBRICS / f"{name}.md"
+
+
+def _check_rubric(name: str) -> str:
+    if name not in list_rubrics():
+        avail = ", ".join(list_rubrics()) or "(none — is config/rubrics/ present?)"
+        raise ValueError(f"unknown rubric {name!r}; available: {avail}")
+    return name
+
 
 def _stamp() -> str:
     return time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
@@ -75,7 +96,8 @@ def _unique_id(slug: str) -> str:
     return pid
 
 
-def new_project(slug: str, topic: str = "") -> str:
+def new_project(slug: str, topic: str = "", rubric: str | None = None) -> str:
+    rubric = _check_rubric(rubric or DEFAULT_RUBRIC)
     slug = slugify(slug)
     project_id = _unique_id(slug)
     d = project_dir(project_id)
@@ -89,13 +111,15 @@ def new_project(slug: str, topic: str = "") -> str:
         "topic": topic,
         "stage": "ideate",
         "status": "pending",
+        "rubric": rubric,
         "idea_slug": None,
         "created": _stamp(),
         "updated": _stamp(),
     }
     save_state(project_id, state)
     (d / "study.md").write_text(
-        f"# Project: {slug}\n\n- **Project id:** {project_id}\n- **Topic:** {topic}\n\n"
+        f"# Project: {slug}\n\n- **Project id:** {project_id}\n- **Topic:** {topic}\n"
+        f"- **Review rubric:** {rubric}\n\n"
         f"## Log\n\n- {_stamp()} — project created (stage: ideate)\n"
     )
     from . import ideas, literature  # local import avoids a circular import at module load

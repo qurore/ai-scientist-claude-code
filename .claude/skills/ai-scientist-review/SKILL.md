@@ -1,6 +1,6 @@
 ---
 name: ai-scientist-review
-description: Stage 4 of the AI Scientist pipeline — produce a rigorous NeurIPS-style peer review of the generated paper (text + figures), as a structured JSON verdict. Use after a paper PDF exists, or when the user wants the AI Scientist to review a paper.
+description: Stage 4 of the AI Scientist pipeline — produce a rigorous peer review of the generated paper (text + figures) as a structured JSON verdict, scored against the project's configured genre rubric (NeurIPS-style ML by default; AAMAS-style agents/MAS; see config/rubrics/). Use after a paper PDF exists, or when the user wants the AI Scientist to review a paper.
 ---
 
 # Stage 4 — Review
@@ -9,10 +9,22 @@ Act as a critical, fair conference reviewer of `projects/<id>/writeup/paper.pdf`
 **read the PDF and its figures directly** (Read tool) — use that, plus the underlying
 `experiment/` results, to judge whether the paper's claims are actually supported.
 
+## Rubric — per-project, from the registry (`config/rubrics/`)
+Which scoring rubric applies is a **per-project setting**: the `rubric` key in
+`projects/<id>/state.json` (default **`neurips-ml`** if absent). Set it with
+`aisci.run new --rubric <name>` or `aisci.run set --rubric <name>`; list the registry
+with `.venv/bin/python -m aisci.run rubrics`.
+
+**Load `config/rubrics/<name>.md` and score against exactly that rubric** — it defines
+the reviewer persona, the scored items and their genre-specific definitions, the
+Overall 1–10 anchors, the Decision rule, and the exact JSON to emit. Knowing the
+rubric/genre does **not** breach review blindness (it is study-level configuration, not
+revision history). Use the same rubric on every re-review of a project so scores stay
+comparable.
+
 ## Authoritative reference
-- Text review rubric/prompt: `vendor/AI-Scientist-v2/ai_scientist/perform_llm_review.py`
-- Figure/caption/reference review: `vendor/AI-Scientist-v2/ai_scientist/perform_vlm_review.py`
-Read these to match the exact rubric and scales.
+- Default text rubric (`neurips-ml`) mirrors: `vendor/AI-Scientist-v2/ai_scientist/perform_llm_review.py`
+- Figure/caption/reference review (all rubrics): `vendor/AI-Scientist-v2/ai_scientist/perform_vlm_review.py`
 
 ## Review blind — no leakage
 Judge the paper **fresh, on its own merits**, from only what is in front of you: the
@@ -26,7 +38,8 @@ function of the paper itself (no anchoring or leniency from "it has improved").
 1. **Read the paper.** Open `paper.pdf` with Read (you see text + figures). Also load
    `experiment/experiment_results/summary.json` so you can verify the paper's numbers
    against what was actually measured.
-2. **Text review** → produce the JSON below.
+2. **Text review** against the project's rubric (see "Rubric" above) → produce its
+   output JSON: the core schema below plus any genre block the rubric defines.
 3. **Figure/caption/reference check** (mirrors the VLM review): for each figure, confirm
    it renders, the caption matches the content, and it's referenced in the text. Flag
    any figure whose claim isn't supported by `experiment_results/`.
@@ -38,7 +51,9 @@ function of the paper itself (no anchoring or leniency from "it has improved").
    `blocking: 0`; then still spot-check a few citations yourself, since the checker only
    proves a paper *exists*, not that it says what the text claims it says.
 
-## Review JSON schema (write to `projects/<id>/review.json`)
+## Core review JSON (every rubric; write to `projects/<id>/review.json`)
+Every rubric emits at least this **core schema**, unchanged in names and scales — it is
+what the improve loop, `score_history.jsonl`, and the publish gate depend on:
 ```json
 {
   "Summary": "What the paper does.",
@@ -61,8 +76,11 @@ function of the paper itself (no anchoring or leniency from "it has improved").
   "Integrity_Flags": ["any unsupported number / unverifiable citation / overclaim"]
 }
 ```
-Scales (match upstream): Originality/Quality/Clarity/Significance 1–4; Soundness/
+Scales (fixed across rubrics): Originality/Quality/Clarity/Significance 1–4; Soundness/
 Presentation/Contribution 1–4; Overall 1–10; Confidence 1–5; Decision ∈ {Accept, Reject}.
+A rubric may **add** genre-specific scored items in one extra block named after the genre
+(e.g. `"AAMAS": {...}` plus `"AAMAS_Recommendation"`) — include them exactly as its
+output template specifies; never remove or re-scale a core field.
 
 ## Be honest and calibrated
 Score against a **high bar** — the standard of a strong paper at a top venue — but score

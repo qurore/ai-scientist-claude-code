@@ -26,6 +26,9 @@ aisci/                 thin python helpers the skills shell out to (run/exec/lat
 bridge/                claude -p adapter (claude_cli, model_map, *_backend, install, run)
 colab/                 optional Colab GPU backend for aisci.exec (compute only) — runner notebook + README
 config/model_map.json  upstream-model -> Claude-model overrides
+config/rubrics/        review-rubric registry: one LLM-as-judge rubric per paper genre
+                       (neurips-ml = default, aamas-agentic, ...); a project picks one via
+                       the "rubric" key in its state.json
 scripts/setup.sh       idempotent env setup (clones vendor, builds .venv, installs deps)
 scripts/doctor.sh      environment diagnostics
 ideas/                 topic *staging* area (drafts + TEMPLATE_topic.md); see ideas/README.md
@@ -55,13 +58,26 @@ version them in a private repo, flip the documented toggle in `.gitignore` (see
 
 ### Helper commands (run from repo root)
 ```bash
-.venv/bin/python -m aisci.run new --slug <slug> --topic "<topic>"   # create a run
+.venv/bin/python -m aisci.run new --slug <slug> --topic "<topic>" [--rubric <name>]  # create a run
+.venv/bin/python -m aisci.run rubrics                               # list review rubrics
 .venv/bin/python -m aisci.run show|list|set ...                     # inspect/update state
 .venv/bin/python -m aisci.exec projects/<id> code/<file>.py --timeout S # run an experiment script
 .venv/bin/python -m aisci.exec projects/<id> code/<file>.py --backend colab # ...on a Colab GPU (compute only; see colab/README.md)
 .venv/bin/python -m aisci.latex projects/<id>/writeup/latex paper.tex   # compile the paper
 bash scripts/doctor.sh                                              # diagnose env
 ```
+
+### Review rubrics (per-genre, per-project)
+The review stage and the improvement loop score against a **rubric from the registry**
+`config/rubrics/` — one markdown file per paper genre (`neurips-ml` = default NeurIPS-style
+ML form; `aamas-agentic` = AAMAS-style for agentic-AI / multiagent-systems papers; add more
+per `config/rubrics/README.md`). All rubrics share the same core JSON schema, the same
+1–10 Overall severity, and the same calibration rules, so improve/score-history/publish
+work unchanged for every genre; a rubric may add genre-specific scored items as one extra
+block (e.g. `"AAMAS": {...}`). Select per project with `aisci.run new --rubric <name>` or
+`aisci.run set --rubric <name>` (stored as `rubric` in `projects/<id>/state.json`; a
+missing key means `neurips-ml`). Keep one rubric per project across iterations so its
+score history stays comparable.
 
 ### Bridge usage (only for upstream parity)
 ```bash

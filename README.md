@@ -26,6 +26,7 @@ through the `claude` CLI in headless mode.
 | `.claude/hooks/` | `session_start` (status), `guard_experiment_exec` (safety), `log_tool_use` (provenance), `stop_autopilot` (autonomy) |
 | `.claude/settings.json` | wires hooks; autopilot off by default; minimal permissions |
 | `aisci/` | thin Python helpers (`run`, `exec`, `latex`, `state`) the skills call |
+| `config/` | `model_map.json` (bridge model overrides) + `rubrics/` (per-genre review rubrics; a project picks one via `state.json`) |
 | `bridge/` | optional `claude -p` adapter for running upstream stages unmodified |
 | `scripts/` | `setup.sh`, `doctor.sh` |
 | `ideas/` | topic *staging* area (drafts + template); gitignored except the template |

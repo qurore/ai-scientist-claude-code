@@ -38,7 +38,7 @@ Every study is one self-contained project directory: `projects/<slug>/`
 
 ```
 projects/<id>/
-  state.json        # {stage, status, idea_slug, created, updated} — the source of truth
+  state.json        # {stage, status, rubric, idea_slug, created, updated} — the source of truth
   idea.md/json      # stage 1
   experiment/
     code/           # experiment scripts you write
@@ -66,9 +66,13 @@ keep it current as you advance.
 3. Create the run dir and `state.json` with `stage: "ideate", status: "pending"`. Use
    the helper:
    ```bash
-   .venv/bin/python -m aisci.run new --slug "<slug>" --topic "<topic>"
+   .venv/bin/python -m aisci.run new --slug "<slug>" --topic "<topic>" [--rubric <name>]
    ```
-   (prints the new run id; also writes `.aisci_cache/current_run`).
+   (prints the new run id; also writes `.aisci_cache/current_run`). Pick the **review
+   rubric** by genre at creation — `aisci.run rubrics` lists the registry in
+   `config/rubrics/` (default `neurips-ml` for ML papers; `aamas-agentic` for
+   agentic-AI / multiagent-systems papers). It can be changed later with
+   `aisci.run set --rubric <name>`.
 4. Run the stages in order, updating `state.json` after each. Stop and summarize for the
    user between stages unless they asked for **autopilot**.
 
